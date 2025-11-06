@@ -4,35 +4,43 @@ import java.util.Random;
 import java.util.Scanner;
 
 class ServiceStation {
-  static Queue<String> arrivingCars = new LinkedList<>();
-  static Queue<String> waitingCars = new LinkedList<>();
-  static Semaphore empty;
-  static Semaphore full = new Semaphore();
-  static Semaphore pumps;
-  static Semaphore newCars = new Semaphore();
-  static Semaphore arrivingCarsMutex = new Semaphore(1);
-  static Semaphore waitingCarsMutex = new Semaphore(1);
-  static int pumpCount;
-  static int waitingAreaCount;
+  protected static Queue<String> arrivingCars = new LinkedList<>();
+  protected static Queue<String> waitingCars = new LinkedList<>();
+  protected static Semaphore empty;
+  protected static Semaphore full = new Semaphore();
+  protected static Semaphore pumps;
+  protected static Semaphore newCars = new Semaphore();
+  protected static Semaphore arrivingCarsMutex = new Semaphore(1);
+  protected static Semaphore waitingCarsMutex = new Semaphore(1);
+  protected static int pumpCount;
+  protected static int waitingAreaCount;
 
-  private static void intializePumps() {
+  protected void intializePumps() {
+    intializePumps(null);
+  }
+
+  protected void intializePumps(CarWashGUI gui) {
     for (int i = 1; i <= pumpCount; i++) {
       Pump pump = new Pump(Integer.toString(i), waitingCars,
           waitingCarsMutex, empty,
-          full, pumps);
+          full, pumps, gui);
       pump.start();
     }
   }
 
-  private static void intializeWatingArea() {
+  protected void intializeWatingArea() {
+    intializeWatingArea(null);
+  }
+
+  protected void intializeWatingArea(CarWashGUI gui) {
     for (int i = 1; i <= waitingAreaCount; i++) {
       Car car = new Car(arrivingCars, empty, full, newCars,
-          arrivingCarsMutex, waitingCarsMutex, pumps, waitingCars);
+          arrivingCarsMutex, waitingCarsMutex, pumps, waitingCars, gui);
       car.start();
     }
   }
 
-  private static String[] initializeStation() {
+  protected static String[] initializeStation() {
     Scanner scanner = new Scanner(System.in);
     System.out.print("Waiting Area Capacity: ");
     waitingAreaCount = scanner.nextInt();
@@ -43,13 +51,14 @@ class ServiceStation {
     scanner.close();
     pumps = new Semaphore(pumpCount);
     empty = new Semaphore(waitingAreaCount);
-    intializePumps();
-    intializeWatingArea();
+    ServiceStation station = new ServiceStation();
+    station.intializePumps();
+    station.intializeWatingArea();
 
     return carsInput.split(",");
   }
 
-  private static void carArrives(String carId) {
+  protected static void carArrives(String carId) {
     arrivingCarsMutex.P();
     arrivingCars.add(carId);
     arrivingCarsMutex.V();

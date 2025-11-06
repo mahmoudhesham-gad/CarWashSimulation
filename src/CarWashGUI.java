@@ -7,19 +7,10 @@ import java.util.Queue;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CarWashGUI extends JFrame {
-    private static Queue<String> arrivingCars = new LinkedList<>();
-    private static Queue<String> waitingCars = new LinkedList<>();
-    private static Semaphore empty;
-    private static Semaphore full = new Semaphore();
-    private static Semaphore pumps;
-    private static Semaphore newCars = new Semaphore();
-    private static Semaphore arrivingCarsMutex = new Semaphore(1);
-    private static Semaphore waitingCarsMutex = new Semaphore(1);
-    private static int pumpCount;
-    private static int waitingAreaCount;
+public class CarWashGUI extends ServiceStation {
     
     // GUI Components
+    private JFrame frame;
     private JPanel pumpPanel;
     private JPanel waitingPanel;
     private JPanel arrivingPanel;
@@ -43,10 +34,10 @@ public class CarWashGUI extends JFrame {
         pumpLabels = new HashMap<>();
         waitingSlots = new HashMap<>();
         
-        setTitle("Car Wash Simulation");
-        setSize(1000, 700);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout(10, 10));
+        frame = new JFrame("Car Wash Simulation");
+        frame.setSize(1000, 700);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new BorderLayout(10, 10));
         
         // Top Panel - Controls
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -114,7 +105,7 @@ public class CarWashGUI extends JFrame {
         controlPanel.add(Box.createHorizontalStrut(20));
         controlPanel.add(statusLabel);
         
-        add(controlPanel, BorderLayout.NORTH);
+        frame.add(controlPanel, BorderLayout.NORTH);
         
         // Center Panel - All Areas
         JPanel centerPanel = new JPanel(new GridLayout(1, 4, 10, 10));
@@ -171,7 +162,7 @@ public class CarWashGUI extends JFrame {
         centerPanel.add(waitingPanel);
         centerPanel.add(pumpPanel);
         centerPanel.add(finishedPanel);
-        add(centerPanel, BorderLayout.CENTER);
+        frame.add(centerPanel, BorderLayout.CENTER);
         
         // Bottom Panel - Log
         JPanel logPanel = new JPanel(new BorderLayout());
@@ -184,46 +175,33 @@ public class CarWashGUI extends JFrame {
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         
         logPanel.add(scrollPane, BorderLayout.CENTER);
-        add(logPanel, BorderLayout.SOUTH);
+        frame.add(logPanel, BorderLayout.SOUTH);
         
         initializeSimulation();
     }
     
+    @Override
+    protected void intializePumps() {
+        intializePumps(this);
+    }
+    
+    @Override
+    protected void intializeWatingArea() {
+        intializeWatingArea(this);
+    }
+    
     private void initializeSimulation() {
-        CarWashSimulation.empty = new Semaphore(waitingAreaCount);
-        CarWashSimulation.pumps = new Semaphore(pumpCount);
-        empty = CarWashSimulation.empty;
-        pumps = CarWashSimulation.pumps;
+        empty = new Semaphore(waitingAreaCount);
+        pumps = new Semaphore(pumpCount);
         
-        // Start pump threads
-        for (int i = 1; i <= pumpCount; i++) {
-            PumpGUI pump = new PumpGUI(Integer.toString(i), waitingCars,
-                    waitingCarsMutex, empty, full, pumps, this);
-            pump.start();
-        }
-        
-        // Start car threads
-        for (int i = 1; i <= waitingAreaCount; i++) {
-            CarGUI car = new CarGUI(arrivingCars, empty, full, newCars,
-                    arrivingCarsMutex, waitingCarsMutex, pumps, waitingCars, this);
-            car.start();
-        }
+        // Use inherited methods to initialize pumps and waiting area
+        intializePumps();
+        intializeWatingArea();
         
         log("Car Wash Simulation Started!");
         log("Service Bays: " + pumpCount);
         log("Waiting Area Capacity: " + waitingAreaCount);
         log("Ready to accept cars...\n");
-    }
-    
-    private static void carArrives(String carId) {
-        arrivingCarsMutex.P();
-        arrivingCars.add(carId);
-        arrivingCarsMutex.V();
-        newCars.V();
-    }
-    
-    public void notifyCarArrival() {
-        updateArrivingCars();
     }
     
     public void log(String message) {
@@ -310,117 +288,7 @@ public class CarWashGUI extends JFrame {
             int waiting = Integer.parseInt(waitingStr != null ? waitingStr : "5");
             
             CarWashGUI gui = new CarWashGUI(pumps, waiting);
-            gui.setVisible(true);
+            gui.frame.setVisible(true);
         });
-    }
-}
-
-class CarWashSimulation {
-    static Semaphore empty;
-    static Semaphore pumps;
-}
-
-class CarGUI extends Thread {
-    private Queue<String> cars;
-    private Semaphore empty;
-    private Semaphore full;
-    private Semaphore arrivingCarsMutex;
-    private Semaphore waitingCarsMutex;
-    private Semaphore pumps;
-    private Semaphore newCars;
-    private Queue<String> queue;
-    private CarWashGUI gui;
-
-    public CarGUI(Queue<String> cars, Semaphore empty, Semaphore full,
-            Semaphore newCars, Semaphore arrivingCarsMutex, Semaphore waitingCarsMutex,
-            Semaphore pumps, Queue<String> queue, CarWashGUI gui) {
-        this.cars = cars;
-        this.empty = empty;
-        this.full = full;
-        this.newCars = newCars;
-        this.waitingCarsMutex = waitingCarsMutex;
-        this.arrivingCarsMutex = arrivingCarsMutex;
-        this.queue = queue;
-        this.pumps = pumps;
-        this.gui = gui;
-    }
-
-    @Override
-    public void run() {
-        while (true) {
-            empty.P();
-            newCars.P();
-            arrivingCarsMutex.P();
-            String id = cars.poll();
-            arrivingCarsMutex.V();
-            gui.updateArrivingCars();
-            waitingCarsMutex.P();
-            queue.add(id);
-            if (this.pumps.getValue() == 0) {
-                gui.log("Car " + id + " enters the waiting area");
-            } else {
-                gui.log("Car " + id + " enters the service area");
-            }
-            gui.updateWaitingArea();
-            waitingCarsMutex.V();
-            full.V();
-        }
-    }
-}
-
-class PumpGUI extends Thread {
-    private Queue<String> queue;
-    private Semaphore waitingCarsMutex;
-    private Semaphore empty;
-    private Semaphore full;
-    private Semaphore pumps;
-    private String id;
-    private CarWashGUI gui;
-
-    public PumpGUI(String id, Queue<String> queue,
-            Semaphore waitingCarsMutex, Semaphore empty,
-            Semaphore full, Semaphore pumps, CarWashGUI gui) {
-        this.id = id;
-        this.queue = queue;
-        this.waitingCarsMutex = waitingCarsMutex;
-        this.empty = empty;
-        this.full = full;
-        this.pumps = pumps;
-        this.gui = gui;
-    }
-
-    @Override
-    public void run() {
-        while (true) {
-            try {
-                full.P();
-                pumps.P();
-                waitingCarsMutex.P();
-
-                String car = queue.poll();
-                gui.log("Pump " + id + " Occupied by: " + car);
-                gui.log("Pump " + id + " begins service: " + car);
-                gui.updatePumpStatus(id, car, true);
-                gui.updateWaitingArea();
-
-                waitingCarsMutex.V();
-                empty.V();
-                Thread.sleep(3000 + (int)(Math.random() * 2000));
-
-                gui.log("Pump " + id + ": " + car + " finishes service");
-                gui.addFinishedCar(car);
-                gui.log("Pump " + id + ": is now free");
-                gui.updatePumpStatus(id, car, false);
-
-                pumps.V();
-                
-                // Delay before picking up next car from waiting area
-                Thread.sleep(1000);
-
-            } catch (InterruptedException e) {
-                gui.log("Pump " + id + " interrupted.");
-                break;
-            }
-        }
     }
 }
