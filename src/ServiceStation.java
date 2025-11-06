@@ -29,7 +29,7 @@ class ServiceStation {
   private static void intializeWatingArea() {
     for (int i = 1; i <= waitingAreaCount; i++) {
       Car car = new Car(arrivingCars, empty, full, newCars,
-          arrivingCarsMutex, waitingCarsMutex, pumps, waitingCars, pumpCount);
+          arrivingCarsMutex, waitingCarsMutex, pumps, waitingCars);
       car.start();
     }
   }

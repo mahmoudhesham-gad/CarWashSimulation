@@ -1,5 +1,4 @@
 import java.util.Queue;
-import java.util.Random;
 
 public class Car extends Thread {
   private Queue<String> cars;
@@ -10,12 +9,10 @@ public class Car extends Thread {
   private Semaphore pumps;
   private Semaphore newCars;
   private Queue<String> queue;
-  private int pumpCount;
-  private Random random;
 
   public Car(Queue<String> cars, Semaphore empty, Semaphore full,
       Semaphore newCars, Semaphore arrivingCarsMutex, Semaphore waitingCarsMutex,
-      Semaphore pumps, Queue<String> queue, int pumpCount) {
+      Semaphore pumps, Queue<String> queue) {
     this.cars = cars;
     this.empty = empty;
     this.full = full;
@@ -24,8 +21,6 @@ public class Car extends Thread {
     this.arrivingCarsMutex = arrivingCarsMutex;
     this.queue = queue;
     this.pumps = pumps;
-    this.pumpCount = pumpCount;
-    this.random = new Random();
   }
 
   @Override
@@ -38,7 +33,7 @@ public class Car extends Thread {
       arrivingCarsMutex.V();
       waitingCarsMutex.P();
       queue.add(id);
-      if (this.queue.size() - 1 >= this.pumpCount) {
+      if (this.pumps.getValue() == 0) {
         System.out.println("Car " + id + " enters the waiting area");
       } else {
         System.out.println("Car " + id + " enters the service area");

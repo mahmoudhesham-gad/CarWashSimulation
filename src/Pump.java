@@ -26,8 +26,8 @@ class Pump extends Thread {
   public void run() {
     while (true) {
       try {
-        pumps.P();
         full.P();
+        pumps.P();
         mutex.P();
 
         String car = queue.poll();
@@ -36,7 +36,7 @@ class Pump extends Thread {
 
         mutex.V();
         empty.V();
-        Thread.sleep(15000 + random.nextInt(10000));
+        Thread.sleep(1500 + random.nextInt(1000));
 
         System.out.println("Pump " + id + ": " + car + " finishes service");
         System.out.println("Pump " + id + ": is now free");
