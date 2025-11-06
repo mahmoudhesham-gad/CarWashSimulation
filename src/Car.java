@@ -13,12 +13,6 @@ public class Car extends Thread {
 
   public Car(Queue<String> cars, Semaphore empty, Semaphore full,
       Semaphore newCars, Semaphore arrivingCarsMutex, Semaphore waitingCarsMutex,
-      Semaphore pumps, Queue<String> queue) {
-    this(cars, empty, full, newCars, arrivingCarsMutex, waitingCarsMutex, pumps, queue, null);
-  }
-
-  public Car(Queue<String> cars, Semaphore empty, Semaphore full,
-      Semaphore newCars, Semaphore arrivingCarsMutex, Semaphore waitingCarsMutex,
       Semaphore pumps, Queue<String> queue, CarWashGUI gui) {
     this.cars = cars;
     this.empty = empty;
@@ -31,14 +25,6 @@ public class Car extends Thread {
     this.gui = gui;
   }
 
-  protected void log(String message) {
-    if (gui != null) {
-      gui.log(message);
-    } else {
-      System.out.println(message);
-    }
-  }
-
   @Override
   public void run() {
     while (true) {
@@ -47,20 +33,21 @@ public class Car extends Thread {
       arrivingCarsMutex.P();
       String id = cars.poll();
       arrivingCarsMutex.V();
-      if (gui != null) {
-        gui.updateArrivingCars();
+      try {
+        Thread.sleep(200);
+      } catch (Exception e) {
       }
+      gui.updateArrivingCars();
       waitingCarsMutex.P();
       queue.add(id);
       if (this.pumps.getValue() == 0) {
-        log("Car " + id + " enters the waiting area");
+        this.gui.log("Car " + id + " enters the waiting area");
+        waitingCarsMutex.V();
       } else {
-        log("Car " + id + " enters the service area");
+        this.gui.log("Car " + id + " enters the service area");
+        waitingCarsMutex.V();
       }
-      if (gui != null) {
-        gui.updateWaitingArea();
-      }
-      waitingCarsMutex.V();
+      gui.updateWaitingArea();
       full.V();
     }
 

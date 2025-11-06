@@ -13,12 +13,6 @@ class Pump extends Thread {
 
   public Pump(String id, Queue<String> queue,
       Semaphore waitingCarsMutex, Semaphore empty,
-      Semaphore full, Semaphore pumps) {
-    this(id, queue, waitingCarsMutex, empty, full, pumps, null);
-  }
-
-  public Pump(String id, Queue<String> queue,
-      Semaphore waitingCarsMutex, Semaphore empty,
       Semaphore full, Semaphore pumps, CarWashGUI gui) {
     this.id = id;
     this.queue = queue;
@@ -30,14 +24,6 @@ class Pump extends Thread {
     this.gui = gui;
   }
 
-  protected void log(String message) {
-    if (gui != null) {
-      gui.log(message);
-    } else {
-      System.out.println(message);
-    }
-  }
-
   @Override
   public void run() {
     while (true) {
@@ -47,35 +33,27 @@ class Pump extends Thread {
         waitingCarsMutex.P();
 
         String car = queue.poll();
-        log("Pump " + id + " Occupied by: " + car);
-        log("Pump " + id + " begins service: " + car);
-        if (gui != null) {
-          gui.updatePumpStatus(id, car, true);
-          gui.updateWaitingArea();
-        }
-
+        this.gui.log("Pump " + id + " Occupied by: " + car);
+        this.gui.log("Pump " + id + " begins service: " + car);
+        gui.updatePumpStatus(id, car, true);
+        gui.updateWaitingArea();
         waitingCarsMutex.V();
         empty.V();
         Thread.sleep(3000 + random.nextInt(2000));
 
-        log("Pump " + id + ": " + car + " finishes service");
-        if (gui != null) {
-          gui.addFinishedCar(car);
-        }
-        log("Pump " + id + ": is now free");
-        if (gui != null) {
-          gui.updatePumpStatus(id, car, false);
-        }
+        this.gui.log("Pump " + id + ": " + car + " finishes service");
+        gui.addFinishedCar(car);
+        this.gui.log("Pump " + id + ": is now free");
+        gui.updatePumpStatus(id, car, false);
 
         pumps.V();
-        
+        gui.updateWaitingArea();
+
         // Delay before picking up next car from waiting area
-        if (gui != null) {
-          Thread.sleep(1000);
-        }
+        Thread.sleep(1000);
 
       } catch (InterruptedException e) {
-        log("Pump " + id + " interrupted.");
+        this.gui.log("Pump " + id + " interrupted.");
         break;
       }
     }
