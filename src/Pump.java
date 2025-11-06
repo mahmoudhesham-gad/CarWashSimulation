@@ -36,7 +36,7 @@ class Pump extends Thread {
 
         waitingCarsMutex.V();
         empty.V();
-        Thread.sleep(1500 + random.nextInt(1000));
+        Thread.sleep(3000 + random.nextInt(2000));
 
         System.out.println("Pump " + id + ": " + car + " finishes service");
         System.out.println("Pump " + id + ": is now free");
