@@ -1,31 +1,51 @@
-import java.util.LinkedList;
-public class Car extends Thread{
-    private String  id;
-    private Semaphore empty;
-    private Semaphore full;
-    private Semaphore mutex;
-    private Semaphore pumps;
-    private LinkedList<String> queue;
+import java.util.Queue;
+import java.util.Random;
 
-    public Car(String id, Semaphore empty, Semaphore full, Semaphore pumps, Semaphore mutex, LinkedList<String> queue) {
-        this.id = id;
-        this.empty = empty;
-        this.full = full;
-        this.pumps = pumps;
-        this.mutex = mutex;
-        this.queue = queue;
+public class Car extends Thread {
+  private Queue<String> cars;
+  private Semaphore empty;
+  private Semaphore full;
+  private Semaphore arrivingCarsMutex;
+  private Semaphore waitingCarsMutex;
+  private Semaphore pumps;
+  private Semaphore newCars;
+  private Queue<String> queue;
+  private int pumpCount;
+  private Random random;
+
+  public Car(Queue<String> cars, Semaphore empty, Semaphore full,
+      Semaphore newCars, Semaphore arrivingCarsMutex, Semaphore waitingCarsMutex,
+      Semaphore pumps, Queue<String> queue, int pumpCount) {
+    this.cars = cars;
+    this.empty = empty;
+    this.full = full;
+    this.newCars = newCars;
+    this.waitingCarsMutex = waitingCarsMutex;
+    this.arrivingCarsMutex = arrivingCarsMutex;
+    this.queue = queue;
+    this.pumps = pumps;
+    this.pumpCount = pumpCount;
+    this.random = new Random();
+  }
+
+  @Override
+  public void run() {
+    while (true) {
+      empty.P();
+      newCars.P();
+      arrivingCarsMutex.P();
+      String id = cars.poll();
+      arrivingCarsMutex.V();
+      waitingCarsMutex.P();
+      queue.add(id);
+      if (this.queue.size() - 1 >= this.pumpCount) {
+        System.out.println("Car " + id + " enters the waiting area");
+      } else {
+        System.out.println("Car " + id + " enters the service area");
+      }
+      waitingCarsMutex.V();
+      full.V();
     }
 
-    @Override
-    public void run(){
-        System.out.println("Car" + id + " arrived");
-        empty.P();
-        mutex.P();
-        queue.add(id);
-        if (pumps.getValue() == 0){
-            System.out.println("Car" + id + " arrived and waiting");
-        }
-        mutex.V();
-        full.V();
-    }
+  }
 }

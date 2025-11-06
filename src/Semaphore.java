@@ -1,31 +1,31 @@
-class Semaphore {
-    private int value = 0;
+public class Semaphore {
+  private int value = 0;
 
-    public Semaphore() {
-        value = 0;
-    }
-    public Semaphore(int initial) {
-        value = initial;
-    }
+  public Semaphore() {
+    value = 0;
+  }
 
-    public synchronized void P() {
-        value--;
-        if (value < 0) {
-            try {
-                wait();
-            }
-            catch (InterruptedException e) { }
-        }
-    }
+  public Semaphore(int initial) {
+    value = initial;
+  }
 
-    public synchronized void V() {
-        value++;
-        if (value <= 0)
-            notify();
+  public synchronized void P() {
+    value--;
+    if (value < 0) {
+      try {
+        wait();
+      } catch (InterruptedException e) {
+      }
     }
+  }
 
-    public synchronized int getValue() {
-        return value;
-    }
+  public synchronized void V() {
+    value++;
+    if (value <= 0)
+      notify();
+  }
+
+  public synchronized int getValue() {
+    return value;
+  }
 }
-
