@@ -3,7 +3,7 @@ import java.util.Random;
 
 class Pump extends Thread {
   private Queue<String> queue;
-  private Semaphore mutex;
+  private Semaphore waitingCarsMutex;
   private Semaphore empty;
   private Semaphore full;
   private Semaphore pumps;
@@ -11,11 +11,11 @@ class Pump extends Thread {
   private Random random;
 
   public Pump(String id, Queue<String> queue,
-      Semaphore mutex, Semaphore empty,
+      Semaphore waitingCarsMutex, Semaphore empty,
       Semaphore full, Semaphore pumps) {
     this.id = id;
     this.queue = queue;
-    this.mutex = mutex;
+    this.waitingCarsMutex = waitingCarsMutex;
     this.empty = empty;
     this.full = full;
     this.pumps = pumps;
@@ -28,13 +28,13 @@ class Pump extends Thread {
       try {
         full.P();
         pumps.P();
-        mutex.P();
+        waitingCarsMutex.P();
 
         String car = queue.poll();
-        System.out.println("Pump " + id + "Occupied by: " + car);
+        System.out.println("Pump " + id + " Occupied by: " + car);
         System.out.println("Pump " + id + " begins service: " + car);
 
-        mutex.V();
+        waitingCarsMutex.V();
         empty.V();
         Thread.sleep(1500 + random.nextInt(1000));
 

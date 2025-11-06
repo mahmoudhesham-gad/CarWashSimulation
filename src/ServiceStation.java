@@ -1,4 +1,3 @@
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Random;
@@ -12,7 +11,6 @@ class ServiceStation {
   static Semaphore pumps;
   static Semaphore newCars = new Semaphore();
   static Semaphore arrivingCarsMutex = new Semaphore(1);
-  static Semaphore pumpQueueMutex = new Semaphore(1);
   static Semaphore waitingCarsMutex = new Semaphore(1);
   static int pumpCount;
   static int waitingAreaCount;
@@ -20,7 +18,7 @@ class ServiceStation {
   private static void intializePumps() {
     for (int i = 1; i <= pumpCount; i++) {
       Pump pump = new Pump(Integer.toString(i), waitingCars,
-          pumpQueueMutex, empty,
+          waitingCarsMutex, empty,
           full, pumps);
       pump.start();
     }
@@ -64,7 +62,7 @@ class ServiceStation {
     for (String car : carsToArrive) {
       System.out.println("Car " + car + " arriving at the service station.");
       carArrives(car);
-      Thread.sleep(100 + random.nextInt(400));
+      // Thread.sleep(100 + random.nextInt(400));
     }
 
     // Keep main thread alive to allow processing
